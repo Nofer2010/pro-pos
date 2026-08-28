@@ -3341,6 +3341,10 @@ function jalankanPPOBdanSaldoSuperadmin() {
         });
 
         let adminScanner = null;
+        window.prosesHasilScanUniversal = function(decodedText) {
+    if (!decodedText) return;
+    prosesScanBarcodeKasir(decodedText);
+};
         window.startAdminScanner = function() {
             const readerDiv = document.getElementById('admin-reader');
             if (readerDiv.style.display === 'block') { if(adminScanner) adminScanner.stop().then(()=>readerDiv.style.display='none'); return; }
