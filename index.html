@@ -1146,12 +1146,28 @@
                         </div>
                     </div>
                     <div>
-                        <div class="card">
-                            <h3>Data Konsumen</h3>
-                            <input type="text" id="kasir-nama-pelanggan" class="form-control" placeholder="Nama Pelanggan (Wajib)">
-                            <input type="text" id="kasir-tlp-pelanggan" class="form-control" placeholder="No Tlp (Opsional)">
-                            <textarea id="kasir-alamat-pelanggan" class="form-control" placeholder="Alamat (Opsional)" rows="2"></textarea>
-                        </div>
+                        
+                      <div class="card">
+    <h3><i class="fa-solid fa-user-check" style="color: #2563eb;"></i> Data Konsumen & Member</h3>
+    
+    <!-- Kolom Pencarian Member Terintegrasi Database -->
+    <div class="form-group" style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #cbd5e1;">
+        <label style="font-size: 13px; font-weight: bold; color: #475569;">Pencarian Member (Lupa Bawa Kartu)</label>
+        <input type="text" id="kasir-cari-member" class="form-control" list="list-data-member" placeholder="🔍 Ketik ID Member atau Nama Lengkap..." onchange="autoFillMember()" style="border-color: #38bdf8; background-color: #f0f9ff; font-weight: bold;">
+        <datalist id="list-data-member"></datalist>
+        <small style="color: #64748b; font-size: 11px;">Pilih dari daftar yang muncul agar data terisi otomatis.</small>
+    </div>
+    
+    <input type="text" id="kasir-nama-pelanggan" class="form-control" placeholder="Nama Pelanggan (Wajib)">
+    <input type="text" id="kasir-tlp-pelanggan" class="form-control" placeholder="No Tlp (Opsional)">
+    <textarea id="kasir-alamat-pelanggan" class="form-control" placeholder="Alamat (Opsional)" rows="2"></textarea>
+    
+    <!-- Indikator Validasi Member -->
+    <div id="indikator-member-aktif" style="display: none; margin-top: 10px; padding: 10px; background: #dcfce7; border: 1px dashed #16a34a; border-radius: 8px; font-size: 13px; color: #16a34a; font-weight: bold; text-align: center;">
+        <i class="fa-solid fa-circle-check"></i> Data Member Tervalidasi Sistem
+    </div>
+</div>
+
 
                         <div class="card keranjang-box">
                             <h3>Keranjang Belanja</h3>
@@ -2237,12 +2253,13 @@ function toggleFormGateway() {
         <span style="color: #ffffff;">MEMBER</span> <span style="color: #ebd18b;">CARD</span>
     </div>
 
-    <!-- Baris Data: Toko, Konsumen, Kasir -->
-    <div style="position: relative; z-index: 10; margin-bottom: 40px; line-height: 1.4;">
-        <div id="card-nama-toko" style="font-size: 20px; font-weight: 900; color: #ffffff; text-transform: uppercase;">NAMA TOKO TERDAFTAR OWNER</div>
-        <div id="card-nama-konsumen" style="font-size: 20px; font-weight: 900; color: #ffffff; text-transform: uppercase;">NAMA KONSUMEN TERDAFTAR</div>
-        <div id="card-nama-kasir" style="font-size: 20px; font-weight: 900; color: #ffffff; text-transform: uppercase;">KASIR</div>
-    </div>
+<!-- Baris Data: Toko, Konsumen -->
+<div style="position: relative; z-index: 10; margin-bottom: 20px; line-height: 1.4;">
+    <div id="card-nama-toko" style="font-size: 20px; font-weight: 900; color: #ffffff; text-transform: uppercase;">NAMA TOKO TERDAFTAR OWNER</div>
+    <div id="card-nama-konsumen" style="font-size: 20px; font-weight: 900; color: #ffffff; text-transform: uppercase;">NAMA KONSUMEN TERDAFTAR</div>
+    <!-- Nama kasir disembunyikan agar tidak tercetak -->
+    <div id="card-nama-kasir" style="display: none; font-size: 20px; font-weight: 900; color: #ffffff; text-transform: uppercase;">KASIR</div>
+</div>
 
     <!-- Bagian Bawah: ID, Expired, dan QR Code -->
     <div style="display: flex; justify-content: space-between; align-items: flex-end; position: relative; z-index: 10;">
@@ -3389,23 +3406,59 @@ function jalankanPPOBdanSaldoSuperadmin() {
             } catch(e) { Swal.fire('Error', e.message, 'error'); }
         }
 
-        window.prosesScanBarcodeKasir = function(textStr) {
-            if(!textStr) return;
-            const txt = textStr.toLowerCase();
-            
-            if(txt.startsWith("draft-")) {
-                lanjutkanPendingByNota(txt.toUpperCase());
-                return;
-            }
+        window.prosesScanBarcodeKasir = async function(textStr) {
+    if(!textStr) return;
+    const txt = textStr.trim().toLowerCase();
+    
+    // 1. Cek jika format kode adalah Draft/Pending
+    if(txt.startsWith("draft-")) {
+        lanjutkanPendingByNota(txt.toUpperCase());
+        return;
+    }
 
-            const barang = daftarBarang.find(b => b.barcode.toLowerCase() === txt || b.nama.toLowerCase() === txt);
-            if(barang) { 
-                window.tambahKeKeranjang(barang.id); 
-                Swal.fire({ icon: 'success', title: 'Dimasukkan!', text: barang.nama, timer: 800, showConfirmButton: false }); 
-            } else { 
-                Swal.fire({ icon: 'error', title: 'Tidak Ditemukan', text: 'Produk/Nota belum terdaftar.' }); 
-            }
-        };
+    // 2. CEK APAKAH BARCODE MILIK MEMBER (Berdasarkan member_id)
+    // Kita cari di dalam array global dataMemberGlobal yang sudah disinkronkan
+    const memberDitemukan = window.dataMemberGlobal ? window.dataMemberGlobal.find(m => m.member_id.toLowerCase() === txt || m.nama.toLowerCase().includes(txt)) : null;
+
+    if (memberDitemukan) {
+        // Jika ketemu, masukkan ID member ke input pencarian member lalu jalankan autoFillMember
+        const inputCariMember = document.getElementById('kasir-cari-member');
+        if (inputCariMember) {
+            inputCariMember.value = `${memberDitemukan.member_id} - ${memberDitemukan.nama}`;
+            window.autoFillMember(); // Memanggil fungsi isi otomatis form & diskon member
+        }
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Member Terdeteksi!',
+            text: `Nama: ${memberDitemukan.nama}`,
+            timer: 1200,
+            showConfirmButton: false
+        });
+        return;
+    }
+
+    // 3. JIKA BUKAN MEMBER, LANJUTKAN CEK BARCODE / NAMA PRODUK
+    const barang = daftarBarang.find(b => b.barcode.toLowerCase() === txt || b.nama.toLowerCase() === txt);
+    
+    if(barang) { 
+        window.tambahKeKeranjang(barang.id); 
+        Swal.fire({ 
+            icon: 'success', 
+            title: 'Dimasukkan!', 
+            text: barang.nama, 
+            timer: 800, 
+            showConfirmButton: false 
+        }); 
+    } else { 
+        Swal.fire({ 
+            icon: 'error', 
+            title: 'Tidak Ditemukan', 
+            text: 'Barcode/Nama (Produk atau Member) belum terdaftar di sistem.' 
+        }); 
+    }
+};
+
 
         window.bukaEditBarang = function(id, nama, modal, jual, disc, stok) {
             document.getElementById('edit-id').value = id;
@@ -4438,6 +4491,7 @@ function jalankanPPOBdanSaldoSuperadmin() {
 
         function jalankanSinkronisasiKasir() {
             jalankanPPOBKasir();
+            sinkronDataMemberKasir(); 
             onSnapshot(query(collection(db, "barang"), where("bos_id", "==", window.bos_id)), (snapshot) => {
                 const tKatalog = document.getElementById('tabel-katalog-kasir');
                 const selPO = document.getElementById('kasir-po-barang');
@@ -5748,6 +5802,133 @@ window.prosesCetakKartuBaru = async function() {
             Swal.fire('Gagal Render', 'Terjadi kesalahan saat memproses gambar kartu.', 'error');
         });
     }, 600);
+};
+
+      // Variabel penyimpan data member dari Firebase
+window.dataMemberGlobal = [];
+window.isMemberAktifKasir = false;
+
+// 1. Fungsi sinkronisasi realtime database pelanggan/member
+function sinkronDataMemberKasir() {
+    onSnapshot(query(collection(db, "pelanggan"), where("bos_id", "==", window.bos_id)), (snapshot) => {
+        window.dataMemberGlobal = [];
+        const datalist = document.getElementById('list-data-member');
+        if (datalist) datalist.innerHTML = '';
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.is_member) { // Filter khusus yang sudah jadi member
+                window.dataMemberGlobal.push(data);
+                if (datalist) {
+                    datalist.innerHTML += `<option value="${data.member_id} - ${data.nama}">`;
+                }
+            }
+        });
+    });
+}
+
+// 2. Eksekusi sinkronisasi saat kasir masuk
+// (Tambahkan pemanggilan ini ke dalam fungsi jalankanSinkronisasiKasir milik Anda)
+const originalSinkronKasir = window.jalankanSinkronisasiKasir;
+window.jalankanSinkronisasiKasir = function() {
+    if(originalSinkronKasir) originalSinkronKasir();
+    sinkronDataMemberKasir();
+};
+
+// 1. Timpa fungsi autoFillMember agar me-refresh keranjang saat member dipilih
+window.autoFillMember = function() {
+    const inputVal = document.getElementById('kasir-cari-member').value.toLowerCase();
+    const indikator = document.getElementById('indikator-member-aktif');
+    
+    const memberFound = window.dataMemberGlobal.find(m => 
+        inputVal.includes(m.member_id.toLowerCase()) || 
+        inputVal.includes(m.nama.toLowerCase())
+    );
+
+    if (memberFound) {
+        document.getElementById('kasir-nama-pelanggan').value = memberFound.nama;
+        document.getElementById('kasir-tlp-pelanggan').value = memberFound.tlp || '';
+        document.getElementById('kasir-alamat-pelanggan').value = memberFound.alamat || '';
+        
+        window.isMemberAktifKasir = true;
+        indikator.style.display = 'block';
+    } else {
+        window.isMemberAktifKasir = false;
+        indikator.style.display = 'none';
+    }
+    
+    // Picu perhitungan ulang agar diskon langsung teraplikasi
+    if(typeof window.renderKeranjang === 'function') window.renderKeranjang();
+};
+
+// 2. Timpa fungsi renderKeranjang untuk kalkulasi diskon otomatis
+window.renderKeranjang = function() {
+    const tbody = document.getElementById('tabel-keranjang-kasir');
+    if(!tbody) return; 
+    tbody.innerHTML = ''; 
+    
+    let subtotalAwal = 0;
+    
+    keranjang.forEach(item => {
+        subtotalAwal += item.subtotal;
+        tbody.innerHTML += `
+            <tr>
+                <td style="padding: 8px 0; vertical-align: middle;">
+                    <b>${item.nama}</b><br>
+                    <small style="color: #64748b;">@ Rp ${item.harga.toLocaleString('id-ID')}</small>
+                </td>
+                <td style="text-align: center; vertical-align: middle; width: 95px;">
+                    <input type="number" 
+                        class="form-control" 
+                        value="${item.qty}" 
+                        min="1" 
+                        onchange="updateQtyKeranjang('${item.id}', this)"
+                        onclick="this.select()"
+                        onfocus="this.select()"
+                        style="width: 70px; text-align: center; font-weight: bold; padding: 6px; margin: 0 auto; border: 2px solid #cbd5e1; border-radius: 6px; font-size: 15px;"
+                        title="Ubah Qty">
+                </td>
+                <td style="text-align: right; vertical-align: middle; min-width: 110px;">
+                    <b style="color: #0f172a;">Rp ${item.subtotal.toLocaleString('id-ID')}</b><br>
+                    <div style="margin-top: 4px;">
+                        <button class="btn btn-warning btn-sm" style="padding: 3px 7px; margin-right: 2px;" onclick="editHargaKeranjang('${item.id}')" title="Ubah Harga Manual">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm" style="padding: 3px 7px;" onclick="hapusDariKeranjang('${item.id}')" title="Hapus Item">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>`;
+    });
+
+    // --- LOGIKA POTONGAN DISKON MEMBER ---
+    let totalDiskon = 0;
+    let totalAkhir = subtotalAwal;
+    let teksDiskon = "";
+
+    if (window.isMemberAktifKasir && window.aturanMemberAktif) {
+        const discPersen = window.aturanMemberAktif.discProduk || 0;
+        if (discPersen > 0) {
+            totalDiskon = subtotalAwal * (discPersen / 100);
+            totalAkhir = subtotalAwal - totalDiskon;
+            teksDiskon = `<div style="font-size: 14px; color: #ef4444; text-align: right; margin-bottom: 5px;">
+                            Diskon Member (${discPersen}%): -Rp ${totalDiskon.toLocaleString('id-ID')}
+                          </div>`;
+        }
+    }
+
+    const totalContainer = document.getElementById('total-keranjang-kasir');
+    if(totalContainer) {
+        totalContainer.innerHTML = `
+            ${teksDiskon}
+            <div style="font-size: 24px; font-weight: bold; color: #0f172a; text-align: right;">Total: Rp ${totalAkhir.toLocaleString('id-ID')}</div>
+        `;
+    }
+    
+    // Simpan perhitungan ke variabel global untuk Modal Pembayaran & Cetak Struk
+    window.globalTotalBelanja = totalAkhir;
+    window.globalTotalDiskonMember = totalDiskon; 
 };
 
 </script>
