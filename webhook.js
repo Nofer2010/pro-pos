@@ -56,6 +56,18 @@ export default async function handler(req, res) {
                 transactionStatus = 'EXPIRED';
             }
         }
+                // 4. Deteksi Mayar Notification (Tambahkan ini)
+        else if (notification.event === 'payment.success' || notification.status === 'success' || notification.transaction_status === 'settlement') {
+            gatewayType = 'mayar';
+            // Sesuaikan key order_id dengan data yang dikirim Mayar (misal: notification.data.orderId atau notification.order_id)
+            orderId = notification.order_id || (notification.data && notification.data.orderId);
+            
+            if (notification.status === 'success' || notification.event === 'payment.success' || notification.transaction_status === 'settlement') {
+                transactionStatus = 'SUCCESS';
+            } else {
+                transactionStatus = 'FAILED';
+            }
+        }
 
         if (!orderId) {
             return res.status(400).json({ error: 'Format webhook tidak dikenali.' });
