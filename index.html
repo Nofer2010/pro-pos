@@ -1629,16 +1629,27 @@
                     <div class="form-group" style="margin-bottom: 20px;">
                         <label style="font-weight: bold; color: #334155; margin-bottom: 8px; display: block;">Pilih Durasi Paket</label>
                         <select id="pilihan-paket-sewa" class="form-control" onchange="updateInfoPembayaran()" style="font-weight: bold; font-size: 15px;">
-                            <option value="1" data-harga="135000">1 Bulan — Rp 135.000</option>
-                            <option value="3" data-harga="390000">3 Bulan — Rp 390.000</option>
-                            <option value="6" data-harga="795000">6 Bulan — Rp 795.000</option>
-                            <option value="12" data-harga="1605000">12 Bulan (1 Tahun) — Rp 1.605.000</option>
+                            <option value="1" data-harga="165000">1 Bulan — Rp 165.000</option>
+                            <option value="3" data-harga="450000">3 Bulan — Rp 450.000</option>
+                            <option value="6" data-harga="825000">6 Bulan — Rp 825.000</option>
+                            <option value="12" data-harga="1635000">12 Bulan (1 Tahun) — Rp 1.635.000</option>
                         </select>
                     </div>
 
+                    <!-- TAMBAHAN: OPSI 1 - PEMBAYARAN OTOMATIS MAYAR -->
+        <div style="background: #eff6ff; border: 2px solid #bfdbfe; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <h4 style="margin: 0 0 8px 0; color: #1e40af; font-size: 15px;"><i class="fa-solid fa-bolt"></i> Opsi 1: Pembayaran Otomatis (Instan)</h4>
+            <p style="font-size: 13px; color: #1e3a8a; margin-bottom: 12px;">Bayar via Virtual Account atau QRIS. Masa sewa langsung aktif otomatis setelah pembayaran.</p>
+            <button onclick="prosesMayar()" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: bold; background: #2563eb; border: none; border-radius: 6px; color: white; cursor: pointer;">
+                <i class="fa-solid fa-credit-card"></i> Bayar Otomatis via Mayar (VA / QRIS)
+            </button>
+        </div>
+
+        <div style="text-align: center; margin: 15px 0; font-weight: bold; color: #94a3b8; font-size: 13px;">--- ATAU PILIH TRANSFER MANUAL ---</div>
+
                     <!-- Kotak Informasi Rekening Tujuan Pusat -->
                     <div style="background: #f8fafc; border: 2px dashed #cbd5e1; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-                        <h4 style="margin-top: 0; color: #0f172a; font-size: 15px; margin-bottom: 12px;"><i class="fa-solid fa-wallet" style="color: #2563eb;"></i> Tujuan Transfer Pembayaran Pusat</h4>
+                        <h4 style="margin-top: 0; color: #0f172a; font-size: 15px; margin-bottom: 12px;"><i class="fa-solid fa-wallet" style="color: #2563eb;"></i> Opsi 2: Tujuan Transfer Pembayaran Pusat</h4>
                         
                         <div style="font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 15px;">
                             <p style="margin-bottom: 8px;"><b>🏦 SeaBank:</b> <code>901016853818</code><br><small style="color: #64748b;">a/n Ferdian Ocktavianto</small></p>
@@ -1648,11 +1659,11 @@
 
                         <div style="background: #e0f2fe; padding: 12px; border-radius: 8px; font-size: 14px; color: #0369a1; display: flex; justify-content: space-between; align-items: center;">
                             <span>Total Tagihan:</span>
-                            <b id="tampil-nominal-tagihan" style="font-size: 18px; color: #0f172a;">Rp 135.000</b>
+                            <b id="tampil-nominal-tagihan" style="font-size: 18px; color: #0f172a;">Rp 165.000</b>
                         </div>
                     </div>
 
-                    <!-- Tombol Aksi -->
+                    <!-- Tombol Konfirmasi WhatsApp -->
                     <button class="btn btn-success" style="width: 100%; padding: 14px; font-size: 16px; font-weight: bold;" onclick="prosesKonfirmasiPerpanjanganSewa()">
                         <i class="fa-brands fa-whatsapp"></i> Konfirmasi Perpanjangan via WhatsApp
                     </button>
@@ -2793,6 +2804,7 @@ window.updateHargaKasir = function() {
     }
 };
       
+// 1. Fungsi saat pilihan dropdown durasi diubah (Pastikan sudah ada seperti di gambar 2)
 window.updateInfoPembayaran = function() {
     const select = document.getElementById('pilihan-paket-sewa');
     if (!select) return;
@@ -2802,6 +2814,21 @@ window.updateInfoPembayaran = function() {
         tampilTagihan.innerText = 'Rp ' + parseInt(hargaPilih).toLocaleString('id-ID');
     }
 };
+
+// 2. Tempelkan fungsi Mayar ini persis di bawahnya
+window.prosesMayar = function() {
+    const select = document.getElementById('pilihan-paket-sewa');
+    const selectedPaket = select.value;
+    const selectedOption = select.options[select.selectedIndex];
+    const hargaPaket = selectedOption.getAttribute('data-harga');
+    
+    // Mengambil ID Klien / Toko yang sedang aktif login
+    const currentBosId = window.bos_id || 'CLIENT_DEFAULT';
+    
+    // Mengarahkan ke link Mayar Anda dengan membawa data parameter paket, ID, dan harga
+    window.location.href = `https://fer-tech.myr.id/membership/pro-pos-app-integrity/?=${selectedPaket}&bos_id=${currentBosId}&amount=${hargaPaket}`;
+};
+      
 // ---> TEMPEL FUNGSI WHATSAPP DI SINI <---
 window.prosesKonfirmasiPerpanjanganSewa = function() {
     const select = document.getElementById('pilihan-paket-sewa');
