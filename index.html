@@ -1982,6 +1982,39 @@ function toggleFormGateway() {
             </div>
                       <!-- SECTION KELOLA PRODUK PPOB PUSAT -->
             <div id="superadmin-section-ppob" class="content-area">
+              <div class="stats-grid" style="margin-bottom: 20px;">
+    <div class="stat-card" style="border-left-color: #38bdf8;">
+        <div class="stat-icon bg-blue"><i class="fa-solid fa-wallet"></i></div>
+        <div class="stat-info">
+            <h4>Saldo VIPayment Pusat</h4>
+            <h2 id="superadmin-saldo-vipayment">Rp 0</h2>
+        </div>
+    </div>
+</div>
+
+  <!-- Form Kredensial API VIPayment -->
+<div class="card" style="margin-bottom: 20px;">
+    <h3><i class="fa-solid fa-key" style="color: #f59e0b;"></i> Kredensial API VIPayment</h3>
+    <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">
+        Masukkan kredensial VIPayment Anda untuk sinkronisasi produk PPOB otomatis.
+    </p>
+    <form id="formKredensialVIP">
+        <div class="form-row">
+            <div class="form-group">
+                <label>VIPayment API ID</label>
+                <input type="text" id="input-vip-apiid" class="form-control" placeholder="Masukkan API ID Anda" required>
+            </div>
+            <div class="form-group">
+                <label>VIPayment API Key</label>
+                <input type="password" id="input-vip-apikey" class="form-control" placeholder="Masukkan API Key Anda" required>
+            </div>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="simpanDanSinkronVIPayment()" style="margin-top: 10px;">
+            <i class="fa-solid fa-sync"></i> Simpan Kredensial & Sinkronkan Produk Otomatis
+        </button>
+    </form>
+</div>
+
                 <div class="card">
                     <h3><i class="fa-solid fa-bolt" style="color: #38bdf8;"></i> Tambah Produk PPOB Pusat</h3>
                     <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">Tambahkan produk digital dasar (Pulsa, Token, Data) yang nantinya akan disetting margin harga jualnya oleh masing-masing Owner Toko.</p>
@@ -5961,6 +5994,53 @@ window.renderKeranjang = function() {
     window.globalTotalBelanja = totalAkhir;
     window.globalTotalDiskonMember = totalDiskon; 
 };
+
+              // --- FUNGSI SIMPAN API KEY & SINKRONISASI VIPAYMENT OTOMATIS ---
+        window.simpanDanSinkronVIPayment = async function() {
+            const apiId = document.getElementById('input-vip-apiid').value.trim();
+            const apiKey = document.getElementById('input-vip-apikey').value.trim();
+
+            if (!apiId || !apiKey) {
+                return Swal.fire('Peringatan', 'API ID dan API Key VIPayment wajib diisi!', 'warning');
+            }
+
+            Swal.fire({
+                title: 'Menyimpan & Menyinkronkan...',
+                text: 'Sedang mengambil data produk dari server VIPayment.',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            try {
+                // 1. Simpan Kredensial ke dokumen Super Admin / Pengaturan Sistem di Firebase
+                await setDoc(doc(db, "pengaturan_sistem", "vipayment"), {
+                    api_id: apiId,
+                    api_key: apiKey,
+                    waktu_update: new Date()
+                }, { merge: true });
+
+                // 2. Tembak Backend Vercel untuk menarik produk PPOB otomatis dari VIPayment
+                const response = await fetch('/api/ppob_sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_id: apiId, api_key: apiKey })
+                });
+
+                const result = await response.json();
+                Swal.close();
+
+                if (response.ok) {
+                    Swal.fire('Berhasil!', 'Kredensial tersimpan dan produk PPOB VIPayment berhasil disinkronkan ke sistem.', 'success');
+                } else {
+                    Swal.fire('Peringatan', 'Kredensial tersimpan, namun gagal sinkron otomatis: ' + (result.error || 'Kesalahan server'), 'info');
+                }
+
+            } catch (error) {
+                Swal.close();
+                console.error("Error:", error);
+                Swal.fire('Error', 'Gagal terhubung ke server: ' + error.message, 'error');
+            }
+        };
 
 </script>
   
