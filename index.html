@@ -6141,18 +6141,11 @@ window.simpanDanSinkronVIPayment = async function() {
 }
 window.muatDataAwalRingan = async function() {
     try {
-        const refTransaksi = collection(db, 'transaksi'); 
-        const q = query(refTransaksi, limit(20)); // Batasi hanya 20 data awal
-        const snapshot = await getDocs(q);
-        
-        let html = '';
-        snapshot.forEach((doc) => {
-            const data = doc.data();
-            // html += `<tr><td>${data.id}</td></tr>`; (Sesuaikan dengan render tabel Abang)
-        });
-        
-        const container = document.getElementById('tabel-transaksi-utama');
-        if(container) container.innerHTML = html;
+        // Kosongkan tabel produk PPOB saat awal buka agar tidak berat
+        const containerTabel = document.getElementById('tabel-produk-ppob');
+        if(containerTabel) {
+            containerTabel.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#666;">Silakan pilih kategori di atas atau ketik pencarian untuk melihat produk.</td></tr>';
+        }
     } catch (e) {
         console.error("Gagal muat awal:", e);
     }
@@ -6195,6 +6188,46 @@ window.filterOperator = async function(namaKategori) {
         console.error("Gagal memuat:", error);
         const containerTabel = document.getElementById('tabel-produk-ppob');
         if(containerTabel) containerTabel.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Gagal memuat data. Cek Console.</td></tr>';
+    }
+};
+      window.cariProdukPPOB = async function(keyword) {
+    if (!keyword || keyword.length < 3) return; 
+    try {
+        const containerTabel = document.getElementById('tabel-produk-ppob'); 
+        if(containerTabel) containerTabel.innerHTML = '<tr><td colspan="4" style="text-align:center;">Mencari produk...</td></tr>';
+
+        const produkRef = collection(db, 'produk_ppob');
+        const q = query(produkRef, limit(20));
+        const querySnapshot = await getDocs(q);
+        
+        let htmlContent = '';
+        let count = 0;
+        
+        querySnapshot.forEach((doc) => {
+            const item = doc.data();
+            const namaProd = (item.nama || "").toLowerCase();
+            const kodeProd = (item.kode || "").toLowerCase();
+            
+            if (namaProd.includes(keyword.toLowerCase()) || kodeProd.includes(keyword.toLowerCase())) {
+                count++;
+                htmlContent += `
+                    <tr>
+                        <td>${item.kode || '-'}</td>
+                        <td>${item.nama || '-'}</td>
+                        <td>${item.kategori || '-'}</td>
+                        <td>Rp ${(item.harga_modal || 0).toLocaleString('id-ID')}</td>
+                    </tr>
+                `;
+            }
+        });
+
+        if (count === 0) {
+            htmlContent = `<tr><td colspan="4" style="text-align:center;">Produk tidak ditemukan.</td></tr>`;
+        }
+
+        if(containerTabel) containerTabel.innerHTML = htmlContent;
+    } catch (error) {
+        console.error("Gagal mencari:", error);
     }
 };
 
