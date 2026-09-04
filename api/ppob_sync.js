@@ -71,11 +71,34 @@ module.exports = async (req, res) => {
 
         data.data.forEach(item => {
             if (item.status === 'available') {
+                
+                // === LOGIKA PENENTUAN KATEGORI ===
+                const brandPusat = (item.brand || "").toUpperCase();
+                const namaPusat = (item.name || "").toUpperCase();
+                let kategoriFinal = "LAINNYA";
+
+                if (brandPusat.includes("PLN") || namaPusat.includes("TOKEN")) {
+                    kategoriFinal = "PLN";
+                } else if (brandPusat.includes("PULSA") || brandPusat.includes("TELKOMSEL") || brandPusat.includes("INDOSAT") || brandPusat.includes("XL") || brandPusat.includes("AXIS")) {
+                    kategoriFinal = "PULSA";
+                } else if (brandPusat.includes("DATA") || namaPusat.includes("KUOTA")) {
+                    kategoriFinal = "PAKET DATA";
+                } else if (brandPusat.includes("DANA")) {
+                    kategoriFinal = "DANA";
+                } else if (brandPusat.includes("OVO")) {
+                    kategoriFinal = "OVO";
+                } else if (brandPusat.includes("GOPAY")) {
+                    kategoriFinal = "GOPAY";
+                } else if (brandPusat.includes("SHOPEE")) {
+                    kategoriFinal = "SHOPEEPAY";
+                }
+                // ===================================
+
                 const produkRef = db.collection('produk_ppob').doc(String(item.code));
                 batch.set(produkRef, {
                     kode: item.code,
                     nama: item.name,
-                    kategori: item.brand,
+                    kategori: kategoriFinal, // <--- Sekarang memakai kategori yang sudah dirapikan
                     harga_modal: parseInt(item.price) || 0,
                     status: item.status,
                     waktu_sync: new Date()
