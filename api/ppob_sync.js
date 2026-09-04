@@ -31,19 +31,24 @@ module.exports = async (req, res) => {
         const sign = crypto.createHash('md5').update(api_id + api_key).digest('hex');
 
         // 1. Request Daftar Produk
-        const bodyParams = new URLSearchParams();
-        bodyParams.append('key', api_key);
-        bodyParams.append('sign', sign);
-        bodyParams.append('type', 'services');
+        let response;
+        try {
+            const bodyParams = new URLSearchParams();
+            bodyParams.append('key', api_key);
+            bodyParams.append('sign', sign);
+            bodyParams.append('type', 'services');
 
-        const response = await fetch('https://vipayment.co.id/api/prepaid', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'User-Agent': 'Mozilla/5.0'
-            },
-            body: bodyParams.toString()
-        });
+            response = await fetch('https://vipayment.co.id/api/prepaid', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'User-Agent': 'Mozilla/5.0'
+                },
+                body: bodyParams.toString()
+            });
+        } catch (fetchErr) {
+            return res.status(500).json({ error: 'Gagal koneksi fetch ke VIPayment (Prepaid): ' + fetchErr.message });
+        }
 
         const textResponse = await response.text();
         let data;
@@ -60,26 +65,26 @@ module.exports = async (req, res) => {
         }
 
         // 2. Request Profil / Saldo Akun
-        const profileParams = new URLSearchParams();
-        profileParams.append('key', api_key);
-        profileParams.append('sign', sign);
-
-        const resProfile = await fetch('https://vipayment.co.id/api/profile', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'User-Agent': 'Mozilla/5.0'
-            },
-            body: profileParams.toString()
-        });
-
-        const profileText = await resProfile.text();
-        let profileData = {};
+        let saldoPusat = 0;
         try {
-            profileData = JSON.parse(profileText);
-        } catch (e) {}
+            const profileParams = new URLSearchParams();
+            profileParams.append('key', api_key);
+            profileParams.append('sign', sign);
 
-        const saldoPusat = profileData && profileData.data ? (profileData.data.balance || 0) : 0;
+            const resProfile = await fetch('https://vipayment.co.id/api/profile', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'User-Agent': 'Mozilla/5.0'
+                },
+                body: profileParams.toString()
+            });
+            const profileText = await resProfile.text();
+            const profileData = JSON.parse(profileText);
+            saldoPusat = profileData && profileData.data ? (profileData.data.balance || 0) : 0;
+        } catch (e) {
+            // Jika profil gagal, lanjut saja dengan saldo 0
+        }
 
         // 3. Simpan ke Firebase Firestore
         const db = getDb();
