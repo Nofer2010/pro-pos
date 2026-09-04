@@ -3039,33 +3039,9 @@ window.prosesTransaksiPPOBKasir = async function() {
 
       // --- SINKRONISASI PRODUK PUSAT KE OWNER ---
 window.jalankanPPOBOwner = async function() {
-    onSnapshot(collection(db, "produk_ppob"), (snapshot) => {
-        const tbody = document.getElementById('tabel-ppob-untuk-owner');
-        if (!tbody) return;
-        tbody.innerHTML = '';
-        
-        snapshot.forEach(docSnap => {
-            const item = docSnap.data();
-            const produkId = docSnap.id;
-            
-            // Kita cari harga yang sudah disetting owner (jika ada)
-            // Abang harus buat koleksi 'harga_ppob_toko' di database
-            tbody.innerHTML += `
-                <tr>
-                    <td><b>${item.nama}</b><br><small>${item.kode}</small></td>
-                    <td>Rp ${item.harga_modal.toLocaleString()}</td>
-                    <td>
-                        <input type="number" id="harga_${produkId}" class="form-control" placeholder="Harga Jual...">
-                    </td>
-                    <td>
-                        <button class="btn btn-primary btn-sm" onclick="simpanHargaJual('${produkId}', '${item.kode}', '${item.nama}', ${item.harga_modal}, '${item.kategori || 'Umum'}')">
-    Simpan
-</button>
-                    </td>
-                </tr>
-            `;
-        });
-    });
+    const tbody = document.getElementById('tabel-ppob-untuk-owner');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #94a3b8;">Ketik di kolom pencarian untuk menampilkan produk PPOB...</td></tr>';
 };
 
 // --- SIMPAN HARGA JUAL KE DATABASE ---
@@ -3134,41 +3110,7 @@ window.tambahSaldoDepositKlien = async function(klienId, namaOwner) {
 
 // --- SINKRONISASI REAL-TIME UNTUK SUPERADMIN ---
 function jalankanPPOBdanSaldoSuperadmin() {
-    // Sinkron Produk PPOB
-    onSnapshot(collection(db, "produk_ppob"), (snapshot) => {
-        const tbody = document.getElementById('tabel-produk-ppob-pusat');
-        if (!tbody) return;
-        tbody.innerHTML = '';
-
-        let docsArray = [];
-        snapshot.forEach(docSnap => docsArray.push({ id: docSnap.id, ...docSnap.data() }));
-
-        if (docsArray.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #94a3b8;">Belum ada produk PPOB pusat.</td></tr>';
-            return;
-        }
-                docsArray.forEach(item => {
-            tbody.innerHTML += `
-                <tr>
-                    <td><b>${item.kode}</b></td>
-                    <td>${item.nama}</td>
-                    <td>${item.kategori}</td>
-                    <td><b style="color: #16a34a;">Rp ${item.harga_modal.toLocaleString('id-ID')}</b></td>
-                    <td style="display: flex; gap: 5px;">
-                                                <button class="btn btn-warning btn-sm" onclick="editHargaPPOBPusat('${item.id}', '${item.kode}', '${item.nama}', ${item.harga_modal})">
-
-                            <i class="fa-solid fa-pen"></i> Edit
-                        </button>
-                        <button class="btn btn-danger btn-sm" onclick="hapusProdukPPOBPusat('${item.id}')">
-                            <i class="fa-solid fa-trash"></i> Hapus
-                        </button>
-                    </td>
-                </tr>
-            `;
-        });
-    });
-
-    // Sinkron Monitoring Saldo Klien
+    // Sinkron Monitoring Saldo Klien SAJA (Produk PPOB tidak ditarik semua agar tidak lag)
     onSnapshot(query(collection(db, "users"), where("role", "==", "owner")), (snapshot) => {
         const tbody = document.getElementById('tabel-monitoring-saldo');
         if (!tbody) return;
@@ -5591,13 +5533,47 @@ function jalankanPPOBdanSaldoSuperadmin() {
         row.style.display = row.innerText.toLowerCase().includes(text) ? '' : 'none'; 
     });
 });
-      document.getElementById('owner-cari-ppob')?.addEventListener('input', function(e) {
-    const text = e.target.value.toLowerCase().trim();
-    const rows = document.querySelectorAll('#tabel-ppob-untuk-owner tr');
-    rows.forEach(row => { 
-        row.style.display = row.innerText.toLowerCase().includes(text) ? '' : 'none'; 
-    });
+  document.getElementById('owner-cari-ppob')?.addEventListener('input', async function(e) {
+    const text = e.target.value.toUpperCase().trim();
+    if (text.length < 3) return; // Cari jika minimal 3 huruf
+
+    const tbody = document.getElementById('tabel-ppob-untuk-owner');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Mencari produk...</td></tr>';
+
+    try {
+        const q = query(collection(db, "produk_ppob"), limit(30)); // Batasi 30 hasil per pencarian
+        const snapshot = await getDocs(q);
+        
+        let htmlContent = '';
+        snapshot.forEach(docSnap => {
+            const item = docSnap.data();
+            const produkId = docSnap.id;
+            
+            if (item.nama.toUpperCase().includes(text) || item.kode.toUpperCase().includes(text)) {
+                htmlContent += `
+                    <tr>
+                        <td><b>${item.nama}</b><br><small>${item.kode}</small></td>
+                        <td>Rp ${item.harga_modal.toLocaleString()}</td>
+                        <td>
+                            <input type="number" id="harga_${produkId}" class="form-control" placeholder="Harga Jual...">
+                        </td>
+                        <td>
+                            <button class="btn btn-primary btn-sm" onclick="simpanHargaJual('${produkId}', '${item.kode}', '${item.nama}', ${item.harga_modal}, '${item.kategori || 'Umum'}')">
+                                Simpan
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }
+        });
+
+        tbody.innerHTML = htmlContent || '<tr><td colspan="4" style="text-align: center;">Produk tidak ditemukan.</td></tr>';
+    } catch (error) {
+        console.error(error);
+    }
 });
+
 // --- FUNGSI PINTAR DETEKSI OPERATOR & FILTER PPOB ---
 window.deteksiOperatorDanFilterProduk = function(noHP) {
     const select = document.getElementById('kasir-pilih-ppob');
@@ -5655,13 +5631,6 @@ window.deteksiOperatorDanFilterProduk = function(noHP) {
 document.getElementById('superadmin-cari-ppob')?.addEventListener('input', function(e) {
     const text = e.target.value.toLowerCase().trim();
     document.querySelectorAll('#tabel-produk-ppob-pusat tr').forEach(row => {
-        row.style.display = row.innerText.toLowerCase().includes(text) ? '' : 'none';
-    });
-});
-
-document.getElementById('owner-cari-ppob')?.addEventListener('input', function(e) {
-    const text = e.target.value.toLowerCase().trim();
-    document.querySelectorAll('#tabel-ppob-untuk-owner tr').forEach(row => {
         row.style.display = row.innerText.toLowerCase().includes(text) ? '' : 'none';
     });
 });
