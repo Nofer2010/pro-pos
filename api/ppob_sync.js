@@ -36,7 +36,8 @@ module.exports = async (req, res) => {
         bodyParams.append('sign', sign);
         bodyParams.append('type', 'services');
 
-        const response = await axios.post('https://vipayment.co.id/api/prepaid', bodyParams, {
+        // URL SUDAH DIPERBARUI KE VIP-RESELLER
+        const response = await axios.post('https://vip-reseller.co.id/api/prepaid', bodyParams, {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
         });
         const data = response.data;
@@ -51,7 +52,8 @@ module.exports = async (req, res) => {
 
         let saldoPusat = 0;
         try {
-            const resProfile = await axios.post('https://vipayment.co.id/api/profile', profileParams, {
+            // URL SUDAH DIPERBARUI KE VIP-RESELLER
+            const resProfile = await axios.post('https://vip-reseller.co.id/api/profile', profileParams, {
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
             });
             saldoPusat = resProfile.data?.data?.balance || 0;
