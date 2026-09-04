@@ -1,7 +1,6 @@
 const { initializeApp, cert, getApps } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 const crypto = require('crypto');
-const fetch = require('node-fetch');
 
 // Inisialisasi Firebase Admin menggunakan variabel terpisah di Vercel Abang
 if (!getApps().length) {
