@@ -43,7 +43,7 @@ module.exports = async (req, res) => {
 
         const data = await response.json();
 
-        if (data.result !== true || data.data) {
+        if (!data || data.result !== true) {
             return res.status(400).json({ 
                 error: 'Gagal mengambil data dari VIPayment: ' + (data.message || 'Respon tidak valid') 
             });
