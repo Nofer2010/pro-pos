@@ -30,14 +30,19 @@ module.exports = async (req, res) => {
 
         const sign = crypto.createHash('md5').update(api_id + api_key).digest('hex');
 
+        // 1. Request Daftar Produk
+        const bodyParams = new URLSearchParams();
+        bodyParams.append('key', api_key);
+        bodyParams.append('sign', sign);
+        bodyParams.append('type', 'services');
+
         const response = await fetch('https://vipayment.co.id/api/prepaid', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-                key: api_key,
-                sign: sign,
-                type: 'services'
-            })
+            headers: { 
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'User-Agent': 'Mozilla/5.0'
+            },
+            body: bodyParams.toString()
         });
 
         const textResponse = await response.text();
@@ -54,11 +59,20 @@ module.exports = async (req, res) => {
             });
         }
 
+        // 2. Request Profil / Saldo Akun
+        const profileParams = new URLSearchParams();
+        profileParams.append('key', api_key);
+        profileParams.append('sign', sign);
+
         const resProfile = await fetch('https://vipayment.co.id/api/profile', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({ key: api_key, sign: sign })
+            headers: { 
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'User-Agent': 'Mozilla/5.0'
+            },
+            body: profileParams.toString()
         });
+
         const profileText = await resProfile.text();
         let profileData = {};
         try {
@@ -67,6 +81,7 @@ module.exports = async (req, res) => {
 
         const saldoPusat = profileData && profileData.data ? (profileData.data.balance || 0) : 0;
 
+        // 3. Simpan ke Firebase Firestore
         const db = getDb();
         const batch = db.batch();
         let totalDisinkronkan = 0;
