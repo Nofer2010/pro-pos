@@ -2058,16 +2058,14 @@ function toggleFormGateway() {
                     <h3>Daftar Produk PPOB Tersedia di Sistem</h3>
                     <!-- Tombol Filter Responsif (Pas untuk HP, Tab, Laptop, PC) -->
 <div style="display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 0; margin-bottom: 12px;">
-    <button onclick="filterOperator('ALL')" style="padding: 5px 12px; font-size: 13px; background: #6c757d; color: white; border: none; border-radius: 15px; cursor: pointer;">Semua</button>
-    <button onclick="filterOperator('INDOSAT')" style="padding: 5px 12px; font-size: 13px; background: #ffc107; color: black; border: none; border-radius: 15px; cursor: pointer; font-weight: bold;">Indosat (50)</button>
-    <button onclick="filterOperator('TELKOMSEL')" style="padding: 5px 12px; font-size: 13px; background: #dc3545; color: white; border: none; border-radius: 15px; cursor: pointer;">Telkomsel</button>
-    <button onclick="filterOperator('XL')" style="padding: 5px 12px; font-size: 13px; background: #007bff; color: white; border: none; border-radius: 15px; cursor: pointer;">XL</button>
-    <button onclick="filterOperator('AXIS')" style="padding: 5px 12px; font-size: 13px; background: #28a745; color: white; border: none; border-radius: 15px; cursor: pointer;">Axis</button>
-    <button onclick="filterOperator('PLN')" style="padding: 5px 12px; font-size: 13px; background: #17a2b8; color: white; border: none; border-radius: 15px; cursor: pointer;">PLN</button>
-    <button onclick="filterOperator('DANA')" style="padding: 5px 12px; font-size: 13px; background: #0080ff; color: white; border: none; border-radius: 15px; cursor: pointer;">DANA</button>
-    <button onclick="filterOperator('OVO')" style="padding: 5px 12px; font-size: 13px; background: #4c2882; color: white; border: none; border-radius: 15px; cursor: pointer;">OVO</button>
-    <button onclick="filterOperator('GO-PAY')" style="padding: 5px 12px; font-size: 13px; background: #00aa13; color: white; border: none; border-radius: 15px; cursor: pointer;">GoPay</button>
-    <button onclick="filterOperator('SHOPEEPAY')" style="padding: 5px 12px; font-size: 13px; background: #ee4d2d; color: white; border: none; border-radius: 15px; cursor: pointer;">ShopeePay</button>
+<button onclick="filterOperator('ALL')">Semua</button>
+<button onclick="filterOperator('PLN')">PLN</button>
+<button onclick="filterOperator('PULSA')">Pulsa</button>
+<button onclick="filterOperator('PAKET DATA')">Paket Data</button>
+<button onclick="filterOperator('DANA')">DANA</button>
+<button onclick="filterOperator('OVO')">OVO</button>
+<button onclick="filterOperator('GOPAY')">GoPay</button>
+<button onclick="filterOperator('SHOPEEPAY')">ShopeePay</button>
 </div>
 
                   <input type="text" id="superadmin-cari-ppob" class="form-control" placeholder="🔍 Cari berdasarkan kode SKU, nama produk, atau kategori..." style="margin-bottom: 15px;">
@@ -6059,7 +6057,7 @@ window.simpanDanSinkronVIPayment = async function() {
 };
 
 // Fungsi untuk memuat produk berdasarkan operator pilihan dengan aman & ringan
-window.filterOperator = async function(namaOperator) {
+  window.filterOperator = async function(namaOperator) {
     try {
         const containerTabel = document.getElementById('tabel-produk-ppob'); 
         if(containerTabel) containerTabel.innerHTML = '<tr><td colspan="4" style="text-align:center;">Memuat data...</td></tr>';
@@ -6067,19 +6065,19 @@ window.filterOperator = async function(namaOperator) {
         const produkRef = collection(db, 'produk_ppob');
         let q;
 
-        if (namaOperator === 'ALL') {
-            // Ambil maksimal 50 data untuk tampilan awal
+        // Jika tombol SEMUA / ALL ditekan
+        if (namaOperator === 'ALL' || namaOperator === 'Semua') {
             q = query(produkRef, limit(50));
         } else {
-            // Filter berdasarkan kategori brand/operator pilihan (Maksimal 50 data)
-            q = query(produkRef, where('kategori', '==', namaOperator), limit(50));
+            // Ubah pencarian agar cocok dengan format huruf besar/kecil di Firestore
+            q = query(produkRef, where('kategori', '==', namaOperator.toUpperCase()), limit(50));
         }
 
         const querySnapshot = await getDocs(q);
         let htmlContent = '';
         
         if (querySnapshot.empty) {
-            htmlContent = `<tr><td colspan="4" style="text-align:center;">Tidak ada produk ditemukan untuk kategori ${namaOperator}.</td></tr>`;
+            htmlContent = `<tr><td colspan="4" style="text-align:center;">Tidak ada produk ditemukan untuk kategori ${namaOperator}. Pastikan kategori di Firestore sesuai.</td></tr>`;
         } else {
             querySnapshot.forEach((doc) => {
                 const item = doc.data();
@@ -6099,7 +6097,9 @@ window.filterOperator = async function(namaOperator) {
     } catch (error) {
         console.error("Gagal memuat produk:", error);
         const containerTabel = document.getElementById('tabel-produk-ppob');
-        if(containerTabel) containerTabel.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Gagal memuat data. Periksa koneksi atau indeks Firestore.</td></tr>';
+        if(containerTabel) {
+            containerTabel.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">Gagal memuat. Cek Console browser atau pastikan Index Firestore untuk field 'kategori' sudah dibuat.</td></tr>`;
+        }
     }
 }
   window.cekSaldoRealtime = async function() {
@@ -6139,6 +6139,72 @@ window.filterOperator = async function(namaOperator) {
         Swal.fire('Error', 'Gagal terhubung ke server backend Vercel', 'error');
     }
 }
+window.muatDataAwalRingan = async function() {
+    try {
+        const refTransaksi = collection(db, 'transaksi'); 
+        const q = query(refTransaksi, limit(20)); // Batasi hanya 20 data awal
+        const snapshot = await getDocs(q);
+        
+        let html = '';
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            // html += `<tr><td>${data.id}</td></tr>`; (Sesuaikan dengan render tabel Abang)
+        });
+        
+        const container = document.getElementById('tabel-transaksi-utama');
+        if(container) container.innerHTML = html;
+    } catch (e) {
+        console.error("Gagal muat awal:", e);
+    }
+};
+
+window.filterOperator = async function(namaKategori) {
+    try {
+        const containerTabel = document.getElementById('tabel-produk-ppob'); 
+        if(containerTabel) containerTabel.innerHTML = '<tr><td colspan="4" style="text-align:center;">Memuat data...</td></tr>';
+
+        const produkRef = collection(db, 'produk_ppob');
+        let q;
+
+        if (namaKategori === 'ALL') {
+            q = query(produkRef, limit(50));
+        } else {
+            q = query(produkRef, where('kategori', '==', namaKategori), limit(50));
+        }
+
+        const querySnapshot = await getDocs(q);
+        let htmlContent = '';
+        
+        if (querySnapshot.empty) {
+            htmlContent = `<tr><td colspan="4" style="text-align:center;">Data kosong untuk kategori ${namaKategori}</td></tr>`;
+        } else {
+            querySnapshot.forEach((doc) => {
+                const item = doc.data();
+                htmlContent += `
+                    <tr>
+                        <td>${item.kode || '-'}</td>
+                        <td>${item.nama || '-'}</td>
+                        <td>${item.kategori || '-'}</td>
+                        <td>Rp ${(item.harga_modal || 0).toLocaleString('id-ID')}</td>
+                    </tr>
+                `;
+            });
+        }
+        if(containerTabel) containerTabel.innerHTML = htmlContent;
+    } catch (error) {
+        console.error("Gagal memuat:", error);
+    }
+};
+
+// Jalankan otomatis saat halaman pertama kali dibuka agar langsung ringan
+window.addEventListener('DOMContentLoaded', () => {
+    if (typeof window.muatDataAwalRingan === 'function') {
+        window.muatDataAwalRingan();
+    }
+    // Jika perlu memuat produk ALL saat pertama buka, tambahkan:
+    // if (typeof window.filterOperator === 'function') window.filterOperator('ALL');
+});
+
 </script>
   
 </body>
