@@ -1,6 +1,7 @@
 const { initializeApp, cert, getApps } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 const crypto = require('crypto');
+const axios = require('axios');
 
 function getDb() {
     if (!getApps().length) {
@@ -30,63 +31,32 @@ module.exports = async (req, res) => {
 
         const sign = crypto.createHash('md5').update(api_id + api_key).digest('hex');
 
-        // 1. Request Daftar Produk
-        let response;
-        try {
-            const bodyParams = new URLSearchParams();
-            bodyParams.append('key', api_key);
-            bodyParams.append('sign', sign);
-            bodyParams.append('type', 'services');
+        const bodyParams = new URLSearchParams();
+        bodyParams.append('key', api_key);
+        bodyParams.append('sign', sign);
+        bodyParams.append('type', 'services');
 
-            response = await fetch('https://vipayment.co.id/api/prepaid', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'User-Agent': 'Mozilla/5.0'
-                },
-                body: bodyParams.toString()
-            });
-        } catch (fetchErr) {
-            return res.status(500).json({ error: 'Gagal koneksi fetch ke VIPayment (Prepaid): ' + fetchErr.message });
-        }
-
-        const textResponse = await response.text();
-        let data;
-        try {
-            data = JSON.parse(textResponse);
-        } catch (err) {
-            return res.status(400).json({ error: 'VIPayment merespon bukan JSON: ' + textResponse.substring(0, 100) });
-        }
+        const response = await axios.post('https://vipayment.co.id/api/prepaid', bodyParams, {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+        const data = response.data;
 
         if (!data || data.result !== true || !data.data) {
-            return res.status(400).json({ 
-                error: 'Gagal dari VIPayment: ' + (data && (data.message || data.note) ? (data.message || data.note) : 'Respon tidak valid') 
-            });
+            return res.status(400).json({ error: 'Gagal dari VIPayment: ' + (data?.message || data?.note || 'Respon tidak valid') });
         }
 
-        // 2. Request Profil / Saldo Akun
+        const profileParams = new URLSearchParams();
+        profileParams.append('key', api_key);
+        profileParams.append('sign', sign);
+
         let saldoPusat = 0;
         try {
-            const profileParams = new URLSearchParams();
-            profileParams.append('key', api_key);
-            profileParams.append('sign', sign);
-
-            const resProfile = await fetch('https://vipayment.co.id/api/profile', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'User-Agent': 'Mozilla/5.0'
-                },
-                body: profileParams.toString()
+            const resProfile = await axios.post('https://vipayment.co.id/api/profile', profileParams, {
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
             });
-            const profileText = await resProfile.text();
-            const profileData = JSON.parse(profileText);
-            saldoPusat = profileData && profileData.data ? (profileData.data.balance || 0) : 0;
-        } catch (e) {
-            // Jika profil gagal, lanjut saja dengan saldo 0
-        }
+            saldoPusat = resProfile.data?.data?.balance || 0;
+        } catch (e) {}
 
-        // 3. Simpan ke Firebase Firestore
         const db = getDb();
         const batch = db.batch();
         let totalDisinkronkan = 0;
@@ -121,7 +91,7 @@ module.exports = async (req, res) => {
         });
 
     } catch (e) {
-        console.error("Sync Error Detail:", e);
-        return res.status(500).json({ error: 'Internal Server Error: ' + e.message });
+        console.error("Sync Error:", e);
+        return res.status(500).json({ error: 'Internal Server Error: ' + (e.response?.data?.message || e.message) });
     }
 };
