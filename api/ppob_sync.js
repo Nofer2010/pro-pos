@@ -21,7 +21,8 @@ module.exports = async (req, res) => {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { api_id, api_key } = req.body;
+  const api_id = req.body.api_id || process.env.VIP_API_ID;
+ const api_key = req.body.api_key || process.env.VIP_API_KEY;
     if (!api_id || !api_key) {
         return res.status(400).json({ error: 'API ID dan API Key wajib diisi!' });
     }
