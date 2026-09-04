@@ -5996,58 +5996,103 @@ window.renderKeranjang = function() {
 };
 
               // --- FUNGSI SIMPAN API KEY & SINKRONISASI VIPAYMENT OTOMATIS ---
-    window.simpanDanSinkronVIPayment = async function() {
-    const apiId = document.getElementById('input-vip-apiid').value.trim();
-    const apiKey = document.getElementById('input-vip-apikey').value.trim();
+window.simpanDanSinkronVIPayment = async function() {
+    const api_id = document.getElementById('input-api-id').value.trim();
+    const api_key = document.getElementById('input-api-apikey').value.trim();
 
-    if (!apiId || !apiKey) {
-        return Swal.fire('Peringatan', 'API ID dan API Key VIPayment wajib diisi!', 'warning');
+    if (!api_id || !api_key) {
+        Swal.fire('Peringatan', 'API ID dan API Key VIPayment wajib diisi!', 'warning');
+        return;
     }
 
     Swal.fire({
         title: 'Menyimpan & Menyinkronkan...',
-        text: 'Sedang mengambil data produk dari server VIPayment.',
+        text: 'Sedang mengambil data produk dari server VIPayment...',
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading()
     });
 
     try {
-        // 1. Simpan Kredensial ke dokumen Super Admin / Pengaturan Sistem di Firebase
-        await setDoc(doc(db, "pengaturan_sistem", "vipayment"), {
-            api_id: apiId,
-            api_key: apiKey,
+        // 1. Buat MD5 Signature secara langsung di browser
+        // (Menggunakan helper CryptoJS atau fungsi MD5 sederhana)
+        const signInput = api_id + api_key;
+        const msgBuffer = new TextEncoder().encode(signInput);
+        const hashBuffer = await crypto.subtle.digest('MD5', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const sign = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+        // 2. Request Daftar Produk (Prepaid) langsung dari browser ke VIPayment menggunakan CORS proxy atau direct fetch jika diizinkan
+        const bodyParams = new URLSearchParams();
+        bodyParams.append('key', api_key);
+        bodyParams.append('sign', sign);
+        bodyParams.append('type', 'services');
+
+        const response = await fetch('https://vipayment.co.id/api/prepaid', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: bodyParams.toString()
+        });
+
+        const data = await response.json();
+
+        if (!data || data.result !== true || !data.data) {
+            throw new Error(data?.message || 'Gagal mengambil data dari VIPayment.');
+        }
+
+        // 3. Request Saldo Profil
+        const profileParams = new URLSearchParams();
+        profileParams.append('key', api_key);
+        profileParams.append('sign', sign);
+
+        const resProfile = await fetch('https://vipayment.co.id/api/profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: profileParams.toString()
+        });
+        const profileData = await resProfile.json();
+        const saldoPusat = profileData?.data?.balance || 0;
+
+        // 4. Simpan langsung ke Firebase Firestore dari browser
+        const batch = writeBatch(db);
+        let totalDisinkronkan = 0;
+
+        // Simpan pengaturan saldo
+        const settingRef = doc(db, 'pengaturan_sistem', 'vipayment');
+        batch.set(settingRef, {
+            api_id: api_id,
+            api_key: api_key,
+            saldo_vipayment: saldoPusat,
             waktu_update: new Date()
         }, { merge: true });
 
-        // 2. Tembak Backend untuk menarik produk PPOB otomatis
-        const response = await fetch('/api/ppob_sync', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ api_id: apiId, api_key: apiKey })
+        // Simpan produk PPOB
+        data.data.forEach(item => {
+            if (item.status === 'available') {
+                const produkRef = doc(db, 'produk_ppob', String(item.code));
+                batch.set(produkRef, {
+                    kode: item.code,
+                    nama: item.name,
+                    kategori: item.brand,
+                    harga_modal: parseInt(item.price) || 0,
+                    status: item.status,
+                    waktu_sync: new Date()
+                }, { merge: true });
+                totalDisinkronkan++;
+            }
         });
 
-        // AMAN DARI ERROR: Ambil teks mentahnya dulu untuk dicek apakah kosong
-        const responseText = await response.text();
-        let result = {};
-        
-        try {
-            result = JSON.parse(responseText);
-        } catch (e) {
-            throw new Error("Server mengembalikan respon kosong atau HTML error. Pastikan file /api/ppob_sync sudah benar di-deploy.");
-        }
+        await batch.commit();
 
         Swal.close();
-
-        if (response.ok) {
-            Swal.fire('Berhasil!', 'Kredensial tersimpan dan produk PPOB VIPayment berhasil disinkronkan ke sistem.', 'success');
-        } else {
-            Swal.fire('Peringatan', 'Gagal sinkron otomatis: ' + (result.error || 'Kesalahan server'), 'info');
-        }
+        Swal.fire('Berhasil!', `Berhasil menyinkronkan ${totalDisinkronkan} produk PPOB! Saldo: Rp ${saldoPusat.toLocaleString('id-ID')}`, 'success');
+        
+        // Refresh tampilan saldo di layar jika ada
+        location.reload();
 
     } catch (error) {
         Swal.close();
-        console.error("Error:", error);
-        Swal.fire('Error', 'Gagal terhubung ke server: ' + error.message, 'error');
+        console.error("Sync Error:", error);
+        Swal.fire('Error', 'Gagal sinkron: ' + error.message, 'error');
     }
 };
       
