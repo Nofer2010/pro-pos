@@ -20,8 +20,8 @@ module.exports = async (req, res) => {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-  const api_id = req.body.api_id || process.env.VIP_API_ID;
- const api_key = req.body.api_key || process.env.VIP_API_KEY;
+    const api_id = req.body.api_id || process.env.VIP_API_ID;
+    const api_key = req.body.api_key || process.env.VIP_API_KEY;
     if (!api_id || !api_key) {
         return res.status(400).json({ error: 'API ID dan API Key wajib diisi!' });
     }
@@ -43,9 +43,10 @@ module.exports = async (req, res) => {
 
         const data = await response.json();
 
-        if (!data || data.result !== true) {
+        // Pengecekan respons yang aman dan akurat
+        if (!data || data.result !== true || !data.data) {
             return res.status(400).json({ 
-                error: 'Gagal mengambil data dari VIPayment: ' + (data.message || 'Respon tidak valid') 
+                error: 'Gagal mengambil data dari VIPayment: ' + (data && (data.message || data.note) ? (data.message || data.note) : 'Respon tidak valid atau kosong') 
             });
         }
 
@@ -56,7 +57,7 @@ module.exports = async (req, res) => {
             body: new URLSearchParams({ key: api_key, sign: sign })
         });
         const profileData = await resProfile.json();
-        const saldoPusat = profileData.data?.balance || 0;
+        const saldoPusat = profileData && profileData.data ? (profileData.data.balance || 0) : 0;
 
         // 4. Simpan Saldo Pusat & Produk ke Firebase Firestore secara Batch
         const batch = db.batch();
