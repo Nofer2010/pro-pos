@@ -72,17 +72,17 @@ module.exports = async (req, res) => {
         data.data.forEach(item => {
             if (item.status === 'available') {
                 
-                // === LOGIKA PENENTUAN KATEGORI ===
+                // === TEMPELKAN LOGIKA KATEGORI YANG AKURAT DI SINI ===
                 const brandPusat = (item.brand || "").toUpperCase();
                 const namaPusat = (item.name || "").toUpperCase();
                 let kategoriFinal = "LAINNYA";
 
                 if (brandPusat.includes("PLN") || namaPusat.includes("TOKEN")) {
                     kategoriFinal = "PLN";
-                } else if (brandPusat.includes("PULSA") || brandPusat.includes("TELKOMSEL") || brandPusat.includes("INDOSAT") || brandPusat.includes("XL") || brandPusat.includes("AXIS")) {
-                    kategoriFinal = "PULSA";
-                } else if (brandPusat.includes("DATA") || namaPusat.includes("KUOTA")) {
+                } else if (namaPusat.includes("DATA") || namaPusat.includes("KUOTA") || namaPusat.includes("COMBO") || namaPusat.includes("INTERNET") || namaPusat.includes("FREEDOM") || brandPusat.includes("DATA")) {
                     kategoriFinal = "PAKET DATA";
+                } else if (brandPusat.includes("PULSA") || namaPusat.includes("REGULER") || namaPusat.includes("TRANSFER")) {
+                    kategoriFinal = "PULSA";
                 } else if (brandPusat.includes("DANA")) {
                     kategoriFinal = "DANA";
                 } else if (brandPusat.includes("OVO")) {
@@ -91,14 +91,16 @@ module.exports = async (req, res) => {
                     kategoriFinal = "GOPAY";
                 } else if (brandPusat.includes("SHOPEE")) {
                     kategoriFinal = "SHOPEEPAY";
+                } else {
+                    kategoriFinal = "PULSA";
                 }
-                // ===================================
+                // ====================================================
 
                 const produkRef = db.collection('produk_ppob').doc(String(item.code));
                 batch.set(produkRef, {
                     kode: item.code,
                     nama: item.name,
-                    kategori: kategoriFinal, // <--- Sekarang memakai kategori yang sudah dirapikan
+                    kategori: kategoriFinal, // Menggunakan kategori yang sudah akurat
                     harga_modal: parseInt(item.price) || 0,
                     status: item.status,
                     waktu_sync: new Date()
@@ -106,7 +108,7 @@ module.exports = async (req, res) => {
                 totalDisinkronkan++;
             }
         });
-
+        
         await batch.commit();
 
         return res.status(200).json({ 
