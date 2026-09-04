@@ -6102,7 +6102,7 @@ window.filterOperator = async function(namaOperator) {
         if(containerTabel) containerTabel.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Gagal memuat data. Periksa koneksi atau indeks Firestore.</td></tr>';
     }
 }
-async function cekSaldoRealtime() {
+  window.cekSaldoRealtime = async function() {
     try {
         Swal.fire({
             title: 'Memeriksa Saldo...',
