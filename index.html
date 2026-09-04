@@ -2058,14 +2058,14 @@ function toggleFormGateway() {
                     <h3>Daftar Produk PPOB Tersedia di Sistem</h3>
                     <!-- Tombol Filter Responsif (Pas untuk HP, Tab, Laptop, PC) -->
 <div style="display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 0; margin-bottom: 12px;">
-<button onclick="filterOperator('ALL')">Semua</button>
-<button onclick="filterOperator('PLN')">PLN</button>
-<button onclick="filterOperator('PULSA')">Pulsa</button>
-<button onclick="filterOperator('PAKET DATA')">Paket Data</button>
-<button onclick="filterOperator('DANA')">DANA</button>
-<button onclick="filterOperator('OVO')">OVO</button>
-<button onclick="filterOperator('GOPAY')">GoPay</button>
-<button onclick="filterOperator('SHOPEEPAY')">ShopeePay</button>
+<button onclick="window.filterOperator('ALL')">Semua</button>
+<button onclick="window.filterOperator('PLN')">PLN</button>
+<button onclick="window.filterOperator('PULSA')">Pulsa</button>
+<button onclick="window.filterOperator('PAKET DATA')">Paket Data</button>
+<button onclick="window.filterOperator('DANA')">DANA</button>
+<button onclick="window.filterOperator('OVO')">OVO</button>
+<button onclick="window.filterOperator('GOPAY')">GoPay</button>
+<button onclick="window.filterOperator('SHOPEEPAY')">ShopeePay</button>
 </div>
 
                   <input type="text" id="superadmin-cari-ppob" class="form-control" placeholder="🔍 Cari berdasarkan kode SKU, nama produk, atau kategori..." style="margin-bottom: 15px;">
@@ -6157,7 +6157,6 @@ window.muatDataAwalRingan = async function() {
         console.error("Gagal muat awal:", e);
     }
 };
-
 window.filterOperator = async function(namaKategori) {
     try {
         const containerTabel = document.getElementById('tabel-produk-ppob'); 
@@ -6166,9 +6165,10 @@ window.filterOperator = async function(namaKategori) {
         const produkRef = collection(db, 'produk_ppob');
         let q;
 
-        if (namaKategori === 'ALL') {
+        if (namaKategori === 'ALL' || namaKategori === 'Semua') {
             q = query(produkRef, limit(50));
         } else {
+            // Huruf harus persis sama dengan di Firestore (kapital)
             q = query(produkRef, where('kategori', '==', namaKategori), limit(50));
         }
 
@@ -6193,6 +6193,8 @@ window.filterOperator = async function(namaKategori) {
         if(containerTabel) containerTabel.innerHTML = htmlContent;
     } catch (error) {
         console.error("Gagal memuat:", error);
+        const containerTabel = document.getElementById('tabel-produk-ppob');
+        if(containerTabel) containerTabel.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Gagal memuat data. Cek Console.</td></tr>';
     }
 };
 
