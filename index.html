@@ -5996,52 +5996,61 @@ window.renderKeranjang = function() {
 };
 
               // --- FUNGSI SIMPAN API KEY & SINKRONISASI VIPAYMENT OTOMATIS ---
-        window.simpanDanSinkronVIPayment = async function() {
-            const apiId = document.getElementById('input-vip-apiid').value.trim();
-            const apiKey = document.getElementById('input-vip-apikey').value.trim();
+    window.simpanDanSinkronVIPayment = async function() {
+    const apiId = document.getElementById('input-vip-apiid').value.trim();
+    const apiKey = document.getElementById('input-vip-apikey').value.trim();
 
-            if (!apiId || !apiKey) {
-                return Swal.fire('Peringatan', 'API ID dan API Key VIPayment wajib diisi!', 'warning');
-            }
+    if (!apiId || !apiKey) {
+        return Swal.fire('Peringatan', 'API ID dan API Key VIPayment wajib diisi!', 'warning');
+    }
 
-            Swal.fire({
-                title: 'Menyimpan & Menyinkronkan...',
-                text: 'Sedang mengambil data produk dari server VIPayment.',
-                allowOutsideClick: false,
-                didOpen: () => Swal.showLoading()
-            });
+    Swal.fire({
+        title: 'Menyimpan & Menyinkronkan...',
+        text: 'Sedang mengambil data produk dari server VIPayment.',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
 
-            try {
-                // 1. Simpan Kredensial ke dokumen Super Admin / Pengaturan Sistem di Firebase
-                await setDoc(doc(db, "pengaturan_sistem", "vipayment"), {
-                    api_id: apiId,
-                    api_key: apiKey,
-                    waktu_update: new Date()
-                }, { merge: true });
+    try {
+        // 1. Simpan Kredensial ke dokumen Super Admin / Pengaturan Sistem di Firebase
+        await setDoc(doc(db, "pengaturan_sistem", "vipayment"), {
+            api_id: apiId,
+            api_key: apiKey,
+            waktu_update: new Date()
+        }, { merge: true });
 
-                // 2. Tembak Backend Vercel untuk menarik produk PPOB otomatis dari VIPayment
-                const response = await fetch('/api/ppob_sync', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ api_id: apiId, api_key: apiKey })
-                });
+        // 2. Tembak Backend untuk menarik produk PPOB otomatis
+        const response = await fetch('/api/ppob_sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ api_id: apiId, api_key: apiKey })
+        });
 
-                const result = await response.json();
-                Swal.close();
+        // AMAN DARI ERROR: Ambil teks mentahnya dulu untuk dicek apakah kosong
+        const responseText = await response.text();
+        let result = {};
+        
+        try {
+            result = JSON.parse(responseText);
+        } catch (e) {
+            throw new Error("Server mengembalikan respon kosong atau HTML error. Pastikan file /api/ppob_sync sudah benar di-deploy.");
+        }
 
-                if (response.ok) {
-                    Swal.fire('Berhasil!', 'Kredensial tersimpan dan produk PPOB VIPayment berhasil disinkronkan ke sistem.', 'success');
-                } else {
-                    Swal.fire('Peringatan', 'Kredensial tersimpan, namun gagal sinkron otomatis: ' + (result.error || 'Kesalahan server'), 'info');
-                }
+        Swal.close();
 
-            } catch (error) {
-                Swal.close();
-                console.error("Error:", error);
-                Swal.fire('Error', 'Gagal terhubung ke server: ' + error.message, 'error');
-            }
-        };
+        if (response.ok) {
+            Swal.fire('Berhasil!', 'Kredensial tersimpan dan produk PPOB VIPayment berhasil disinkronkan ke sistem.', 'success');
+        } else {
+            Swal.fire('Peringatan', 'Gagal sinkron otomatis: ' + (result.error || 'Kesalahan server'), 'info');
+        }
 
+    } catch (error) {
+        Swal.close();
+        console.error("Error:", error);
+        Swal.fire('Error', 'Gagal terhubung ke server: ' + error.message, 'error');
+    }
+};
+      
 </script>
   
 </body>
