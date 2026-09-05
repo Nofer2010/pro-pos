@@ -1633,6 +1633,7 @@
                             <option value="3" data-harga="450000">3 Bulan — Rp 450.000</option>
                             <option value="6" data-harga="825000">6 Bulan — Rp 825.000</option>
                             <option value="12" data-harga="1635000">12 Bulan (1 Tahun) — Rp 1.635.000</option>
+                             <option value="60" data-harga="7777000">5 Tahun – Rp 7.777.000</option>
                         </select>
                     </div>
 
@@ -2373,6 +2374,24 @@ function toggleFormGateway() {
         }
 
         function showSection(role, sectionId, element) {
+          // --- KUNCI FITUR FREE TRIAL ---
+    const lockedSections = ['penggajian', 'pengaturan-member', 'produk-ppob-toko', 'pengaturan'];
+    
+    if (lockedSections.includes(sectionId) && !window.isPremiumUser) {
+        Swal.fire({
+            icon: 'lock',
+            title: 'Fitur Terkunci (Trial)',
+            text: 'Fitur ini hanya tersedia untuk pengguna Premium. Silakan perpanjang masa sewa untuk membuka semua akses.',
+            confirmButtonText: 'Upgrade Sekarang',
+            showCancelButton: true,
+            cancelButtonText: 'Nanti Saja'
+        }).then((result) => {
+            if (result.isConfirmed && role === 'owner') {
+                showSection('owner', 'perpanjangan');
+            }
+        });
+        return; // Hentikan proses, halaman tidak akan dibuka
+    }
             const view = document.getElementById('view-' + role);
             view.querySelectorAll('.content-area').forEach(el => el.classList.remove('active'));
             view.querySelectorAll('.' + role + '-nav').forEach(el => el.classList.remove('active'));
@@ -2853,29 +2872,54 @@ window.updateHargaKasir = function() {
 };
       
 // 1. Fungsi saat pilihan dropdown durasi diubah (Pastikan sudah ada seperti di gambar 2)
-window.updateInfoPembayaran = function() {
-    const select = document.getElementById('pilihan-paket-sewa');
-    if (!select) return;
-    const hargaPilih = select.options[select.selectedIndex].getAttribute('data-harga');
-    const tampilTagihan = document.getElementById('tampil-nominal-tagihan');
-    if (tampilTagihan) {
-        tampilTagihan.innerText = 'Rp ' + parseInt(hargaPilih).toLocaleString('id-ID');
-    }
-};
-
-// 2. Tempelkan fungsi Mayar ini persis di bawahnya
 window.prosesMayar = function() {
     const select = document.getElementById('pilihan-paket-sewa');
-    const selectedPaket = select.value;
+    const selectedPaket = select.value; 
     const selectedOption = select.options[select.selectedIndex];
     const hargaPaket = selectedOption.getAttribute('data-harga');
     
-    // Mengambil ID Klien / Toko yang sedang aktif login
     const currentBosId = window.bos_id || 'CLIENT_DEFAULT';
     
-    // Mengarahkan ke link Mayar Anda dengan membawa data parameter paket, ID, dan harga
-    window.location.href = `https://fer-tech.myr.id/membership/pro-pos-app-integrity/?=${selectedPaket}&bos_id=${currentBosId}&amount=${hargaPaket}`;
-};
+    const urlMayarPaket = {
+        "1":  "https://fer-tech.myr.id/pl/perpanjangan-masa-sewa-pro-pos-app-1-bulan",
+        "3":  "https://fer-tech.myr.id/pl/perpanjangan-sewa-pro-pos-app-3-bulan",
+        "6":  "https://fer-tech.myr.id/pl/perpanjangan-sewa-pro-pos-app-6-bulan",
+        "12": "https://fer-tech.myr.id/pl/perpanjangan-sewa-pro-pos-app-12-bulan",
+        "60": "https://fer-tech.myr.id/pl/perpanjangan-sewa-pro-pos-app-60-bulan",
+    };
+
+    const targetUrl = urlMayarPaket[selectedPaket];
+
+    if (!targetUrl) {
+        return Swal.fire('Error', 'Pilihan paket sewa tidak valid.', 'error');
+    }
+    
+    window.location.href = `${targetUrl}?reference_id=${currentBosId}&amount=${hargaPaket}`;
+}; // <--- Tutup kurung ini wajib ada untuk mengakhiri window.prosesMayar
+
+
+// --- FUNGSI UPDATE TOTAL TAGIHAN DI LAYAR ---
+const selectPaket = document.getElementById('pilihan-paket-sewa');
+const textTotalTagihan = document.getElementById('tampil-nominal-tagihan'); 
+
+if (selectPaket) {
+    selectPaket.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const harga = selectedOption.getAttribute('data-harga');
+        
+        // Format angka ke format Rupiah
+        const formatRupiah = new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0
+        }).format(harga);
+        
+        // Ubah teks total tagihan di layar secara real-time
+        if (textTotalTagihan) {
+            textTotalTagihan.innerText = formatRupiah;
+        }
+    });
+}
       
 // ---> TEMPEL FUNGSI WHATSAPP DI SINI <---
 window.prosesKonfirmasiPerpanjanganSewa = function() {
@@ -3216,7 +3260,12 @@ function jalankanPPOBdanSaldoSuperadmin() {
                         const ownerSnap = await getDoc(doc(db, "users", window.bos_id));
                         if(ownerSnap.exists()) {
                             const ownerData = ownerSnap.data();
-
+                                  // --- PENENTU STATUS TRIAL ATAU PREMIUM ---
+                          window.isPremiumUser = false;
+                                // Jika lisensi permanen atau sudah pernah bayar sewa (nominal > 0)
+                            if (ownerData.tipe_lisensi === "permanen" || (ownerData.nominal_bayar && ownerData.nominal_bayar > 0)) {
+                          window.isPremiumUser = true;
+                          }
                             const tipeLisensi = ownerData.tipe_lisensi || "sewa";
                             const batasWaktuSewa = ownerData.batas_waktu;
 
@@ -3643,6 +3692,11 @@ function jalankanPPOBdanSaldoSuperadmin() {
 
         document.getElementById('formTambahPegawai')?.addEventListener('submit', async (e) => {
             e.preventDefault();
+              // --- LIMIT 3 KARYAWAN UNTUK TRIAL ---
+    if (!window.isPremiumUser && window.dataKaryawanGlobal && window.dataKaryawanGlobal.length >= 3) {
+        Swal.fire('Limit Tercapai', 'Versi Free Trial hanya dapat mendaftarkan maksimal 3 Karyawan. Upgrade aplikasi untuk kuota karyawan tanpa batas!', 'warning');
+        return;
+    }
             const btn = document.getElementById('btn-simpan-pegawai');
             btn.innerText = "Memproses..."; btn.disabled = true;
             try {
@@ -4731,7 +4785,18 @@ function jalankanPPOBdanSaldoSuperadmin() {
                 window.paymentListener(); 
                 window.paymentListener = null; 
             }
-            
+            // --- KUNCI METODE BAYAR SELAIN TUNAI SAAT TRIAL ---
+    const selectMetode = document.getElementById('input-metode-bayar');
+    Array.from(selectMetode.options).forEach(opt => {
+        if (opt.value !== 'Tunai') {
+            opt.disabled = !window.isPremiumUser;
+            // Tambahkan label visual agar kasir tahu ini fitur premium
+            if (!window.isPremiumUser && !opt.text.includes('Premium')) {
+                opt.text += ' (Premium)';
+            }
+        }
+    });
+          
             // Tampilkan popup konfirmasi pembayaran
             document.getElementById('modalBayarKasir').style.display = 'flex';
         };
