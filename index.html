@@ -2375,7 +2375,7 @@ function toggleFormGateway() {
 
         function showSection(role, sectionId, element) {
           // --- KUNCI FITUR FREE TRIAL ---
-    const lockedSections = ['penggajian', 'pengaturan-member', 'produk-ppob-toko', 'pengaturan'];
+    const lockedSections = ['penggajian', 'pengaturan-member', 'produk-ppob-toko', 'pengaturan', 'member', 'ppob-kasir', 'dashboard-sales'];
     
     if (lockedSections.includes(sectionId) && !window.isPremiumUser) {
         Swal.fire({
