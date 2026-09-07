@@ -6275,6 +6275,57 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 </script>
-  
+
+          <script>
+document.addEventListener("DOMContentLoaded", function() {
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+
+    fileInputs.forEach(input => {
+        input.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Jika file sudah di bawah 100KB, biarkan saja
+            if (file.size <= 100 * 1024) return; 
+
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = function(event) {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    // Memperkecil resolusi gambar maksimal lebar 800px untuk menghemat ukuran
+                    const maxWidth = 800;
+                    const scaleSize = maxWidth / img.width;
+                    canvas.width = maxWidth;
+                    canvas.height = img.height * scaleSize;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    // Proses kompresi menjadi format JPEG dengan kualitas 40% (sekitar 50-100kb)
+                    canvas.toBlob(function(blob) {
+                        // Membuat file baru hasil kompresi
+                        const compressedFile = new File([blob], file.name, {
+                            type: 'image/jpeg',
+                            lastModified: Date.now()
+                        });
+
+                        // Menimpa file asli dengan file hasil kompresi ke dalam input
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(compressedFile);
+                        input.files = dataTransfer.files;
+                        
+                        console.log("Ukuran foto asli:", (file.size/1024).toFixed(2), "KB");
+                        console.log("Berhasil dikompres menjadi:", (compressedFile.size/1024).toFixed(2), "KB");
+                    }, 'image/jpeg', 0.4); 
+                }
+            }
+        });
+    });
+});
+</script>
+
 </body>
 </html>
