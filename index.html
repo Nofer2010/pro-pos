@@ -794,6 +794,51 @@
     </div>
 </div>
 
+<!-- ==================== EXPIRED VIEW ==================== -->
+<div id="view-expired" class="app-view">
+    <div style="height: 100vh; width: 100vw; display: flex; flex-direction: column; justify-content: center; align-items: center; background-color: #f4f7f6; padding: 20px; text-align: center; overflow-y: auto;">
+        <div style="background: #fff; padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); max-width: 480px; width: 100%; border-top: 5px solid #dc3545; margin: auto;">
+            <h2 style="color: #dc3545; margin-bottom: 10px; font-size: 24px;">Akses Aplikasi Dihentikan!</h2>
+            <p style="font-size: 14px; margin-bottom: 15px; color: #666; line-height: 1.5;">
+                Masa coba gratis (trial) atau masa sewa PT Anda telah berakhir. Silakan pilih paket dan metode pembayaran di bawah ini:
+            </p>
+            
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; font-size: 13px; margin-bottom: 15px; color: #444; text-align: left; border: 1px solid #e9ecef;">
+                <label style="font-weight: bold; display: block; margin-bottom: 6px; color: #333;">Pilih Durasi Paket Perpanjangan:</label>
+                <select id="pilih-paket-expired" onchange="hitungTotalExpired()" style="width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 14px; margin-bottom: 12px; outline: none; font-weight: bold;">
+                    <!-- Harga dikembalikan ke Rp 165.000 -->
+                    <option value="165000" data-bulan="1">1 Bulan — Rp 165.000</option>
+                    <option value="450000" data-bulan="3">3 Bulan — Rp 450.000</option>
+                    <option value="825000" data-bulan="6">6 Bulan — Rp 825.000</option>
+                    <option value="1635000" data-bulan="12">12 Bulan — Rp 1.635.000</option>
+                    <option value="7777000" data-bulan="60">60 Bulan - Rp 7.777.000</option>
+                </select>
+                <div style="background: #e7f1ff; padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #b6d4fe;">
+                    <span style="font-weight: bold; color: #0056b3;">Total Tagihan:</span>
+                    <span id="total-harga-expired" style="font-size: 16px; font-weight: bold; color: #0056b3;">Rp 165.000</span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px; text-align: left;">
+                <label style="font-size: 13px; font-weight: 600; color: #333; display: block; margin-bottom: 8px;">Pilih Opsi Pembayaran:</label>
+                <div onclick="bayarViaDanaExpired()" style="background: #fff; border: 1px solid #b6d4fe; padding: 12px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='#fff'">
+                    <strong style="color: #0d6efd; font-size: 14px;">📲 Opsi Pembayaran Via DANA</strong>
+                    <p style="font-size: 13px; color: #333; margin-top: 4px;">Nomor DANA: <strong>0857-1913-4016</strong> (a.n. Ferdian Ocktavianto)</p>
+                    <p style="font-size: 11px; color: #0d6efd; margin-top: 4px; font-weight: bold;">👉 Klik di sini untuk Transfer DANA & Konfirmasi ke WhatsApp</p>
+                </div>
+
+                <a id="btn-mayar-expired" href="https://fer-tech.myr.id/pl/perpanjangan-masa-sewa-pro-pos-app-1-bulan/" target="_blank" style="display: block; text-decoration: none; background-color: #28a745; color: white; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 14px; box-shadow: 0 4px 10px rgba(40,167,69,0.3);">
+                    💳 Bayar Instan via Link MAYAR.id
+                </a>
+            </div>
+
+            <p style="font-size: 12px; color: #888; margin-top: 5px; margin-bottom: 15px;">Konfirmasi & Bantuan WhatsApp: <strong>6285719134016</strong></p>
+            
+            <button class="btn btn-dark global-btnLogout" style="width: 100%;">Keluar Akun (Log Out)</button>
+        </div>
+    </div>
+</div>
+
 
 
     <!-- ==================== ADMIN VIEW ==================== -->
@@ -1555,6 +1600,20 @@
                         <tbody id="tabel-laporan-owner"></tbody>
                     </table>
                 </div>
+               <div class="card" style="margin-top: 20px;">
+                  <h3>Laporan Transaksi Produk Digital (PPOB)</h3>
+                <div style="display: flex; gap: 20px; margin-bottom: 15px; font-size: 14px;">
+                <div>Total Trx: <b id="total-trx-ppob" style="color: #2563eb;">0</b></div>
+                <div>Omset: <b id="total-omset-ppob" style="color: #2563eb;">Rp 0</b></div>
+                <div>Profit Bersih: <b id="total-profit-ppob" style="color: #16a34a;">Rp 0</b></div>
+          </div>
+        <div class="table-responsive">
+        <table>
+            <thead><tr><th>Waktu</th><th>Pelanggan</th><th>Produk</th><th>Modal</th><th>Jual</th><th>Profit</th></tr></thead>
+            <tbody id="tabel-laporan-ppob"></tbody>
+        </table>
+    </div>
+</div>
             </div>
             <div id="owner-section-karyawan" class="content-area">
     <div class="card" style="max-width: 550px; margin: 0 auto 30px auto; padding: 35px;">
@@ -1659,9 +1718,9 @@
                         </div>
 
                         <div style="background: #e0f2fe; padding: 12px; border-radius: 8px; font-size: 14px; color: #0369a1; display: flex; justify-content: space-between; align-items: center;">
-                            <span>Total Tagihan:</span>
-                            <b id="tampil-nominal-tagihan" style="font-size: 18px; color: #0f172a;">Rp 165.000</b>
-                        </div>
+                          <span>Total Tagihan:</span>
+                          <b style="font-size: 18px; color: #0f172a;">Rp <span id="tampil-nominal-tagihan">165.000</span></b>
+                      </div>
                     </div>
 
                     <!-- Tombol Konfirmasi WhatsApp -->
@@ -2630,7 +2689,7 @@ function toggleFormGateway() {
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, getDocs, collection, addDoc, onSnapshot, query, updateDoc, deleteDoc, where } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, getDocs, collection, addDoc, onSnapshot, query, updateDoc, deleteDoc, where, limit } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
         
         const firebaseConfig = {
             apiKey: "AIzaSyDOGBtbtRigQ0pwk0RKT2tER80AhSuS1NM",
@@ -2870,33 +2929,6 @@ window.updateHargaKasir = function() {
         Swal.fire('Error Jaringan', e.message, 'error');
     }
 };
-      
-// 1. Fungsi saat pilihan dropdown durasi diubah (Pastikan sudah ada seperti di gambar 2)
-window.prosesMayar = function() {
-    const select = document.getElementById('pilihan-paket-sewa');
-    const selectedPaket = select.value; 
-    const selectedOption = select.options[select.selectedIndex];
-    const hargaPaket = selectedOption.getAttribute('data-harga');
-    
-    const currentBosId = window.bos_id || 'CLIENT_DEFAULT';
-    
-    const urlMayarPaket = {
-        "1":  "https://fer-tech.myr.id/pl/perpanjangan-masa-sewa-pro-pos-app-1-bulan",
-        "3":  "https://fer-tech.myr.id/pl/perpanjangan-sewa-pro-pos-app-3-bulan",
-        "6":  "https://fer-tech.myr.id/pl/perpanjangan-sewa-pro-pos-app-6-bulan",
-        "12": "https://fer-tech.myr.id/pl/perpanjangan-sewa-pro-pos-app-12-bulan",
-        "60": "https://fer-tech.myr.id/pl/perpanjangan-sewa-pro-pos-app-60-bulan",
-    };
-
-    const targetUrl = urlMayarPaket[selectedPaket];
-
-    if (!targetUrl) {
-        return Swal.fire('Error', 'Pilihan paket sewa tidak valid.', 'error');
-    }
-    
-    window.location.href = `${targetUrl}?reference_id=${currentBosId}&amount=${hargaPaket}`;
-}; // <--- Tutup kurung ini wajib ada untuk mengakhiri window.prosesMayar
-
 
 // --- FUNGSI UPDATE TOTAL TAGIHAN DI LAYAR ---
 const selectPaket = document.getElementById('pilihan-paket-sewa');
@@ -3274,19 +3306,24 @@ function jalankanPPOBdanSaldoSuperadmin() {
                                 const waktuSekarangMs = new Date().getTime();
                                 const sisaWaktuMs = waktuExpiredMs - waktuSekarangMs;
 
-                                if (sisaWaktuMs <= 0) {
-                                    await signOut(auth);
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Masa Sewa Habis',
-                                        text: 'Masa berlangganan aplikasi untuk toko ini telah berakhir. Silakan hubungi Admin Developer (Bang Fer) untuk perpanjangan.',
-                                        confirmButtonText: 'Tutup'
-                                    });
-                                    switchView('auth');
-                                    return;
-                                } else if (userData.role === 'owner' && sisaWaktuMs <= (10 * 60 * 60 * 1000)) {
-                                    window.mulaiHitungMundurSewa(waktuExpiredMs);
-                                }
+                              if (sisaWaktuMs <= 0) {
+                                Swal.fire({
+                                icon: 'error',
+                                title: 'Masa Sewa Habis',
+                                  text: 'Masa berlangganan aplikasi untuk toko ini telah berakhir. Silakan lakukan perpanjangan.',
+                                  confirmButtonText: 'Tutup'
+                                  });
+                                  switchView('expired'); 
+    
+                        // Sisipkan baris ini agar link default (1 Bulan) langsung terisi bos_id yang valid
+                            setTimeout(() => { 
+                          if (typeof window.hitungTotalExpired === 'function') window.hitungTotalExpired(); 
+                              }, 500);
+    
+                              return;
+                              } else if (userData.role === 'owner' && sisaWaktuMs <= (10 * 60 * 60 * 1000)) {
+                              window.mulaiHitungMundurSewa(waktuExpiredMs);
+                              }
                             }
 
                             window.namaToko = ownerData.namaToko || "Pro POS App";
@@ -4761,12 +4798,7 @@ function jalankanPPOBdanSaldoSuperadmin() {
                 return Swal.fire('Kosong', 'Keranjang belanja masih kosong.', 'info');
             }
 
-            // Hitung grand total
-            window.globalTotalBelanja = keranjang.reduce((sum, item) => sum + item.subtotal, 0);
-            
-            // Masukkan total ke dalam modal popup
-            document.getElementById('input-subtotal').value = 'Rp ' + window.globalTotalBelanja.toLocaleString('id-ID');
-            
+          
             // Reset tampilan modal selalu ke Tunai setiap kali dibuka
             document.getElementById('input-metode-bayar').value = 'Tunai';
             document.getElementById('container-tunai').style.display = 'block';
@@ -6274,9 +6306,89 @@ window.addEventListener('DOMContentLoaded', () => {
     // if (typeof window.filterOperator === 'function') window.filterOperator('ALL');
 });
 
+
 </script>
 
           <script>
+
+// --- FUNGSI UPDATE TOTAL TAGIHAN & LINK MAYAR DI HALAMAN EXPIRED ---
+window.hitungTotalExpired = function() {
+    const select = document.getElementById('pilih-paket-expired');
+    const selectedOption = select.options[select.selectedIndex];
+    const harga = selectedOption.value; // Nilai harga (misal: 450000)
+    const bulan = selectedOption.getAttribute('data-bulan'); // Nilai bulan (misal: 3)
+    const linkMayar = document.getElementById('btn-mayar-expired');
+    
+    // Update tampilan total tagihan di layar dengan format Rupiah
+    const formatRupiah = new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0
+    }).format(harga);
+    
+    document.getElementById('total-harga-expired').innerText = formatRupiah;
+    
+    // Perbaikan Bug: Penambahan trailing slash (/) di akhir setiap URL
+    const urlMayarPaket = {
+        "1": "https://fer-tech.myr.id/pl/perpanjangan-masa-sewa-pro-pos-app-1-bulan/",
+        "3": "https://fer-tech.myr.id/pl/perpanjangan-sewa-pro-pos-app-3-bulan/", 
+        "6": "https://fer-tech.myr.id/pl/perpanjangan-sewa-pro-pos-app-6-bulan/",
+        "12": "https://fer-tech.myr.id/pl/perpanjangan-sewa-pro-pos-app-12-bulan/",
+        "60": "https://fer-tech.myr.id/pl/perpanjangan-sewa-pro-pos-app-60-bulan/",
+    };
+
+    // Perbarui href link Mayar secara dinamis beserta reference_id & amount
+    if (urlMayarPaket[bulan]) {
+        linkMayar.href = urlMayarPaket[bulan] + "?reference_id=" + (window.bos_id || 'CLIENT_DEFAULT') + "&amount=" + harga;
+    }
+};
+
+window.prosesMayar = function() {
+    const select = document.getElementById('pilihan-paket-sewa');
+    const selectedPaket = select.value; 
+    const selectedOption = select.options[select.selectedIndex];
+    const hargaPaket = selectedOption.getAttribute('data-harga');
+    
+    const currentBosId = window.bos_id || 'CLIENT_DEFAULT';
+    
+    // Perbaikan Bug: Penambahan trailing slash (/) di akhir setiap URL
+    const urlMayarPaket = {
+        "1":  "https://fer-tech.myr.id/pl/perpanjangan-masa-sewa-pro-pos-app-1-bulan/",
+        "3":  "https://fer-tech.myr.id/pl/perpanjangan-sewa-pro-pos-app-3-bulan/",
+        "6":  "https://fer-tech.myr.id/pl/perpanjangan-sewa-pro-pos-app-6-bulan/",
+        "12": "https://fer-tech.myr.id/pl/perpanjangan-sewa-pro-pos-app-12-bulan/",
+        "60": "https://fer-tech.myr.id/pl/perpanjangan-sewa-pro-pos-app-60-bulan/",
+    };
+
+    const targetUrl = urlMayarPaket[selectedPaket];
+
+    if (!targetUrl) {
+        return Swal.fire('Error', 'Pilihan paket sewa tidak valid.', 'error');
+    }
+    
+    window.location.href = `${targetUrl}?reference_id=${currentBosId}&amount=${hargaPaket}`;
+};
+
+
+// --- FUNGSI KONFIRMASI TRANSFER DANA MANUAL VIA WHATSAPP ---
+window.bayarViaDanaExpired = function() {
+    const select = document.getElementById('pilih-paket-expired');
+    const selectedOption = select.options[select.selectedIndex];
+    const harga = parseInt(selectedOption.value).toLocaleString('id-ID');
+    const bulan = selectedOption.getAttribute('data-bulan');
+    
+    const namaTokoClient = window.namaToko || "Toko Klien";
+    
+    const pesan = encodeURIComponent(
+        `Halo Admin Bang Fer,\n\n` +
+        `Saya mau perpanjang sewa aplikasi Pro POS App untuk toko *${namaTokoClient}* selama *${bulan} Bulan*.\n\n` +
+        `Metode: Transfer DANA\nTotal Tagihan: *Rp ${harga}*\n\n` +
+        `Berikut saya lampirkan bukti transfernya. Terima kasih!`
+    );
+    
+    window.open(`https://wa.me/6285719134016?text=${pesan}`, '_blank');
+};
+
 document.addEventListener("DOMContentLoaded", function() {
     const fileInputs = document.querySelectorAll('input[type="file"]');
 
